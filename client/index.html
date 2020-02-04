@@ -1,0 +1,90 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=3">
+    <style>
+        body {
+            background-color: gray;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+            Roboto, Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans",
+            "Helvetica Neue", sans-serif;
+        }
+        li {
+            list-style: none;
+        }
+        .status-item {
+            width: 20em;
+            text-align: center;
+            font-weight: bold;
+            display: block;
+            padding: 3em;
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+<h1>Surgery Status Board</h1>
+<ul id="events"></ul>
+</body>
+<script type="text/javascript">
+    //the go httpserver is not setting the correct MIME type for a separate javascript file so as a workaround I'm including js in the html instead
+    const url = `/events`;
+    const statuses = [
+        ["Scheduled", "#f0f0f0"],
+        ["Getting Registered", "#ff9911"],
+        ["Pre-Procedure", "#dddd00"],
+        ["In Procedure", "#22cc22"],
+        ["Recovery 1", "#bbbbff"],
+        ["Recovery 2", "#7777ff"],
+        ["Complete", "#999999"],
+        ["Canceled", "#cc2222"],
+    ];
+
+    const eventSource = new EventSource(url);
+
+    eventSource.onopen = () => {
+        console.log("Event Stream opened.")
+    };
+
+    const eventListHTML = document.getElementById("events");
+
+    eventSource.onmessage = (event) => {
+        addOrUpdateEntry(event)
+    };
+
+    eventSource.onerror = (err) => {
+        console.log(err);
+    };
+
+    const addOrUpdateEntry = (evt) => {
+        let evtArr = evt.data.split(" ");
+        //if li with id exists, update it
+        let li = document.getElementById(evtArr[0]);
+        if (li == undefined) {
+            li = document.createElement("li");
+            li.setAttribute("id", evtArr[0]);
+            li.setAttribute("class", "status-item");
+            eventListHTML.appendChild(li);
+        }
+        li.textContent = `Patient ${evtArr[0]}: ${statuses[Number(evtArr[1])][0]}`;
+        li.style.backgroundColor = statuses[Number(evtArr[1])][1];
+
+    };
+
+    if(typeof(EventSource) == "undefined") {
+        const errorli = document.createElement("li");
+        errorli.textContent = "Server Side Events not supported by this browser";
+        document.getElementById("events").appendChild(errorli);
+    }
+</script>
+</html>
